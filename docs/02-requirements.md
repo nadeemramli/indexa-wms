@@ -2,57 +2,63 @@
 
 Functional requirements for INDEXA WMS v1, organized by module. Each module maps to a pain point in [`01-current-state.md`](01-current-state.md).
 
+**Key decisions baked in (2026-07-30):**
+
+- Internal-only app: users are Nadeem (admin) + operational team. **No seller/customer logins** — sellers and customers stay on WhatsApp.
+- Tech: Supabase + Vercel web app, mobile-first.
+- Batch/lot + expiry tracking is **mandatory** (cold-chain vials, batch numbers, expiry dates).
+- Order confirmed **on payment**. No partial fulfilment. No cancellations/returns flow (a simple void/cancel status is enough for mistakes).
+
 Priorities: **P0** = v1 must-have · **P1** = v1 nice-to-have · **P2** = later.
 
 ---
 
 ## Module A — Product Catalog
 
-The foundation everything else references.
-
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| A1 | Maintain a product list: name, SKU, dosage/size variant (e.g. Tirzepatide 60mg vial), category, active/inactive | P0 |
-| A2 | Support variants of the same compound by dosage (5mg / 10mg / 60mg are distinct SKUs) | P0 |
-| A3 | Track default cost price and default selling price per SKU | P0 |
-| A4 | Support non-vial products (supplies: bac water, syringes) | P1 |
+| A1 | Product list: compound name, SKU, dosage variant, category, active/inactive. Seed with actual inventory: GHK-Cu, Retatrutide, BPC-157, etc., each with its own dosages | P0 |
+| A2 | Each (compound × dosage) is a distinct SKU | P0 |
+| A3 | Two price tiers per SKU: **seller price** and **public price** | P0 |
+| A4 | **Packaging materials as inventory items** (branded boxes; later: bac water, syringes, ice packs if stocked) — tracked like stock but not sold | P0 |
 | A5 | Product bundles/blends sold as one line item | P2 |
 
-**Why:** "1 vial 60mg" must resolve to exactly one SKU. Without a catalog, orders and stock counts stay ambiguous.
+**Why:** "1 vial 60mg" must resolve to exactly one SKU, at the right price tier. Boxes are P0 because running out of boxes blocks shipping just as hard as running out of vials.
 
 ---
 
-## Module B — Inventory (centralized, multi-holder)
+## Module B — Inventory (batch-tracked, multi-location)
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| B1 | Live stock quantity per SKU, **per holder/location** (Nadeem's stock, fulfiller's stock, + future locations) | P0 |
-| B2 | Total stock per SKU = sum across holders, visible at a glance | P0 |
-| B3 | Every stock change is a recorded **movement**: stock-in (restock), transfer between holders, deduction on fulfilment, adjustment (count correction, damage, loss) with reason | P0 |
-| B4 | Fulfiller can update/adjust their own stock from their phone in seconds | P0 |
-| B5 | Stock is **reserved** when an order is accepted and **deducted** when it ships, so "available = on-hand − reserved" | P1 |
-| B6 | Periodic stock count (cycle count) flow: enter physical count → system logs variance as adjustment | P1 |
-| B7 | Stock movement history per SKU (who, when, why) | P1 |
+| B1 | Live stock per SKU **per location** (Nadeem's house, team's house — extensible) | P0 |
+| B2 | Stock is held as **batches**: batch number, expiry date, quantity remaining, which purchase it came from | P0 |
+| B3 | Total per SKU = sum across locations/batches, visible at a glance; expiry-soonest shown first (FEFO — first expired, first out) | P0 |
+| B4 | Every change is a recorded **movement**: stock-in (receiving), transfer between locations, deduction on fulfilment, adjustment (count/damage/expiry write-off) with reason + who + when | P0 |
+| B5 | Team can update stock from a phone in seconds (mobile-first flows) | P0 |
+| B6 | **Expiry alerts**: batches nearing expiry flagged on dashboard | P1 |
+| B7 | Stock **reserved** on confirmed (paid) orders; available = on-hand − reserved | P1 |
+| B8 | Cycle count flow: enter physical count → variance logged as adjustment | P1 |
 
-**Why:** kills the "how much stock do we have?" messages. B3 (movement ledger, not just editable numbers) is what makes the count trustworthy.
+**Why:** kills the "how much stock do we have?" messages. The movement ledger (B4) is what makes the number trustworthy; batch tracking (B2) is required by the physical reality of the product (batch numbers, expiry, cold chain, lab-test-per-batch).
 
 ---
 
-## Module C — Order Management
+## Module C — Order Management (internal entry)
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| C1 | Structured order submission: customer name, phone, product/SKU + qty, delivery address, delivery method, target date, seller | P0 |
-| C2 | Sellers can submit orders themselves via a simple form/app link (no login friction; per-seller link acceptable) | P0 |
-| C3 | Order lifecycle statuses: `Submitted → Confirmed → Packed → Shipped/Out for delivery → Delivered` (+ `Cancelled`, `On hold`) | P0 |
-| C4 | Anyone with access sees order status without asking anyone — sellers see their own orders' status | P0 |
-| C5 | Quick-parse assist: paste today's free-text format (NAMA/PHONE/QUANTITY) and the system pre-fills the form — smooth migration for sellers | P1 |
-| C6 | Payment status per order (unpaid / deposit / paid) and amount | P1 |
-| C7 | Order edit/cancel with history | P1 |
-| C8 | Attach proof: tracking number, delivery photo, payment receipt | P1 |
-| C9 | Notifications (WhatsApp/Telegram) on status change to seller | P2 |
+| C1 | Order record with standard e-commerce fields: customer name, phone, delivery address, line items (SKU + qty + price), channel (seller / direct), price tier applied, notes | P0 |
+| C2 | **Paste-to-parse assist**: paste the WhatsApp text (NAMA / PHONE NO / QUANTITY format and similar) → form pre-fills, team completes the rest. This is the primary intake accelerator since sellers/customers stay on WhatsApp | P0 |
+| C3 | Lifecycle: `Draft (unpaid) → Confirmed (paid) → Packed → Shipped/Out for delivery → Completed` + `Void` for mistakes. **Confirmation happens on payment** | P0 |
+| C4 | Payment tracking per order: amount, method (transfer/QR/COD), attach receipt/QR screenshot as proof | P0 |
+| C5 | Seller attribution on seller-channel orders (even with one seller today — supports margin-per-channel and future sellers) | P0 |
+| C6 | Order list + search (by customer name/phone/status/date) — replaces chat scrollback | P0 |
+| C7 | Order edit history (who changed what) | P1 |
+| C8 | Repeat-customer recognition by phone number (supports the QR-on-box direct-sales goal: see that a customer came back) | P1 |
+| C9 | WhatsApp status notifications to seller/customer | P2 |
 
-**Why:** replaces chat-scrollback orders with records that carry their own status. C5 matters because seller behavior change is the biggest adoption risk.
+**Why:** structured records with payment-gated confirmation mirror how the business actually works. C2 is the adoption bridge — nobody outside the team changes behavior.
 
 ---
 
@@ -60,14 +66,15 @@ The foundation everything else references.
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| D1 | Each order carries **delivery method** (Lalamove, courier/postage, pickup, …) and **target dispatch date** | P0 |
-| D2 | **Prep queue for the fulfiller**: "what must be packed, grouped by dispatch date and method" — e.g. everything for Saturday's Lalamove run in one list | P0 |
-| D3 | Fulfiller marks orders Packed / Shipped from phone; stock deducts automatically from their holder's inventory | P0 |
-| D4 | Calendar/agenda view of upcoming dispatch dates | P1 |
-| D5 | Flag orders that can't be fulfilled from current stock (short-stock warning on the queue) | P1 |
-| D6 | Batch view: group same-day Lalamove orders for a single pickup | P2 |
+| D1 | Each order carries **delivery method** and **target dispatch date**. Methods: Lalamove, COD/meet-up, self-pickup, courier postage (City-Link, Best Express, DHL eC, KEX, Celsius Express Chilled/Frozen, Pos Laju, Aramex, LEX, Skynet, Pos MELPlus, SPX, J&T, …— maintainable list, not hardcoded) | P0 |
+| D2 | **Prep queue**: what must be packed, grouped by dispatch date + method ("Saturday: 1 Lalamove run, 3 courier parcels") | P0 |
+| D3 | Marking Packed/Shipped deducts stock (FEFO suggestion by batch) from the fulfilling location and records which **batch** each vial came from | P0 |
+| D4 | **Delivery cost + who pays** (customer / Indexa / seller) captured per order — feeds margin | P0 |
+| D5 | Tracking number / Lalamove reference field per order | P1 |
+| D6 | Calendar/agenda view of upcoming dispatches | P1 |
+| D7 | Short-stock warning on the queue (order can't be fulfilled from current stock) | P1 |
 
-**Why:** the delivery method + date is what actually drives daily work today; the system should present work the way it's executed.
+**Why:** the delivery method + date drives daily work. Lalamove is booked per order with no fixed days, so the queue must be date-driven, not route-driven. Recording batch-per-order (D3) also gives traceability if a batch has issues.
 
 ---
 
@@ -75,14 +82,16 @@ The foundation everything else references.
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| E1 | Reorder point per SKU; dashboard + alert when available stock falls below it | P0 |
-| E2 | Record purchases/restocks: supplier, quantity, **unit cost for that batch**, order date, expected arrival, received date | P0 |
-| E3 | Receiving a purchase increases stock (stock-in movement) at the chosen holder | P0 |
-| E4 | Incoming stock visible ("50 vials arriving ~next week") so orders can be accepted against it | P1 |
-| E5 | Supplier list with lead times | P1 |
-| E6 | Suggested reorder quantity based on sales velocity | P2 |
+| E1 | Supplier list: name, products supplied, typical lead time, notes (multiple suppliers; one main) | P0 |
+| E2 | Purchase record: supplier, SKUs + quantities, **unit cost**, order date, expected arrival, status (ordered / in transit / received) | P0 |
+| E3 | Receiving creates **batches**: batch number, expiry date, qty, landed unit cost → stock-in movement at chosen location | P0 |
+| E4 | **Testing cost per batch** (Janoshik): record test fee (+ result/link) against the batch; amortized into that batch's unit cost | P0 |
+| E5 | Reorder point per SKU; dashboard flag when available stock falls below it | P0 |
+| E6 | Incoming stock visible ("50 vials arriving ~next week") | P1 |
+| E7 | Other landed-cost components per purchase (shipping, customs, payment fees) | P1 |
+| E8 | Suggested reorder quantity from sales velocity | P2 |
 
-**Why:** restocking becomes proactive; E2's per-batch cost is also the input that makes margin calculation honest.
+**Why:** restocking becomes proactive, and E3+E4 make batch-level landed cost real — which is what makes Module F honest.
 
 ---
 
@@ -90,13 +99,13 @@ The foundation everything else references.
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| F1 | Cost per unit tracked per purchase batch; margin per order line = selling price − unit cost (− attributable delivery cost) | P0 |
-| F2 | Margin visible per order, per product, per seller, per period | P0 |
-| F3 | Price list management: standard price per SKU, optionally per-seller pricing tiers | P1 |
-| F4 | Delivery cost captured per order (Lalamove fee etc.) and included in margin | P1 |
-| F5 | Simple P&L-ish summary: revenue, COGS, delivery costs, gross margin per week/month | P2 |
+| F1 | Landed cost per batch = (purchase cost + allocated testing cost [+ E7 components]) ÷ units | P0 |
+| F2 | Margin per order line = selling price (seller or public tier) − batch landed cost − Indexa-paid delivery cost share | P0 |
+| F3 | Margin views: per order, per product, per channel (seller vs direct), per month | P0 |
+| F4 | Price list management for both tiers, with change history | P1 |
+| F5 | Simple monthly summary: revenue, COGS, delivery costs, testing costs, gross margin | P1 |
 
-**Why:** "price/costing = margin calculation" is a stated core problem. F1 depends on E2 — costing lives or dies on recording batch costs at purchase time.
+**Why:** "price/costing = margin calculation" is a stated core problem. The seller-vs-direct margin view (F3) also quantifies the strategic value of the QR-on-box direct-sales push.
 
 ---
 
@@ -104,9 +113,9 @@ The foundation everything else references.
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| G1 | Roles: **Admin** (Nadeem — everything), **Fulfiller** (inventory + fulfilment queue, no costs/margins), **Seller** (submit + track own orders only) | P0 |
-| G2 | Sellers must never see cost prices, margins, other sellers' orders, or total stock levels **(confirm: should sellers see availability at all — e.g. "in stock / out of stock"?)** | P0 |
-| G3 | Audit trail: every order status change and stock movement records who did it and when | P1 |
+| G1 | Roles: **Admin** (Nadeem — everything incl. costs/margins/pricing) and **Ops** (inventory, orders, fulfilment — no cost/margin visibility by default; configurable) | P0 |
+| G2 | Supabase Auth, email login, small fixed user set (no self-signup) | P0 |
+| G3 | Audit trail on order status changes and stock movements (who/when) | P1 |
 
 ---
 
@@ -114,25 +123,28 @@ The foundation everything else references.
 
 | ID | Requirement |
 |----|-------------|
-| N1 | **Mobile-first.** Fulfiller and sellers operate from phones. Every P0 flow must work one-handed on a phone. |
-| N2 | **Low friction beats features.** If updating stock takes >15 seconds, the fulfiller will stop doing it and the system dies. |
-| N3 | Bahasa Malaysia-friendly UI labels where sellers touch the system **(confirm language preference)**. |
-| N4 | Data privacy: customer names + phone numbers are PII — access limited by role; consider what sellers/fulfiller can export. |
-| N5 | Works on unstable mobile connections (graceful failure, no lost submissions). |
+| N1 | **Mobile-first.** Every P0 flow must work one-handed on a phone. |
+| N2 | **Low friction beats features.** If updating stock takes >15 seconds, it won't be done and the numbers rot. |
+| N3 | Data privacy: customer names + phones are PII; role-limited access; Supabase RLS on all tables. |
+| N4 | Works on unstable mobile connections — no lost submissions. |
+| N5 | MYR currency, DD/MM/YYYY dates, Asia/Kuala_Lumpur timezone. |
 
 ---
 
 ## Explicitly out of scope for v1
 
-- Public e-commerce storefront / integration with indexalab.shop checkout (revisit later)
-- Marketplace integrations (Shopee/Lazada/TikTok)
-- Automated Lalamove API booking (v1 = manual booking, system tracks the schedule)
+- Seller or customer logins / seller self-serve portal (seller stays on WhatsApp)
+- Website checkout integration (indexalab.shop → WhatsApp handoff stays as-is, by design)
+- Automated Lalamove API booking (manual booking; system tracks the schedule)
+- WhatsApp API automation (revisit as C9/P2)
+- Returns/cancellation workflows (a `Void` status suffices)
 - Accounting integration
-- Multi-warehouse beyond the two-holder model
+- Marketplace integrations
 
 ## Suggested v1 build order
 
-1. **Catalog + Inventory (A, B)** — immediate value: shared live stock count, fulfiller updates from phone
-2. **Orders (C) + Fulfilment queue (D)** — structured intake, status visibility, prep-by-date
-3. **Restocking (E) + Costing/Margin (F)** — needs A/B/C data flowing to be meaningful
-4. **Roles hardening + seller self-serve (G, C2 at scale)**
+1. **Catalog + batch inventory (A, B)** — immediate value: shared live stock with expiry across both houses
+2. **Orders with paste-to-parse + payment gating (C)** — structured intake, statuses, proof attached
+3. **Fulfilment queue + delivery scheduling (D)** — the "what ships when" view
+4. **Purchasing/receiving + costing (E, F)** — batches enter with real landed cost; margins light up
+5. **Role hardening + audit (G)**

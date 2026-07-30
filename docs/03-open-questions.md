@@ -1,63 +1,27 @@
-# 03 — Open Questions (Discovery)
+# 03 — Open Questions
 
-Questions to answer **before** building. Grouped by module; the P0-blocking ones are marked 🔴. Answering these turns assumptions in the other docs into facts.
+Updated 2026-07-30 after discovery session with Nadeem. Most 🔴 blockers are resolved (answers folded into docs 01/02). What remains is mostly **seed data to collect** and a few smaller decisions — none block starting the schema.
 
-## Business & sellers
+## Seed data to collect (needed before/at go-live, not before schema)
 
-- 🔴 How many sellers are there, and how do they currently reach you (WhatsApp individual chats? group? other)?
-- 🔴 What's the commercial arrangement with sellers — fixed wholesale price, commission on sale, or seller sets own end price? (Determines what "margin" means and what sellers may see.)
-- Roughly how many orders per day/week now, and what growth do you expect? (Affects how much automation is worth it.)
-- Do end-customers ever order directly (not via a seller)? Via the website?
-- Does the indexalab.shop website take real orders today, or is it primarily a catalog/brand page?
+- [ ] **Full SKU list**: every compound + dosage currently stocked (GHK-Cu, Retatrutide, BPC-157, …), with current seller price + public price per SKU.
+- [ ] **Supplier list**: names, which products each supplies, typical lead time, who the main supplier is.
+- [ ] **Current stock snapshot**: per SKU, per location (Nadeem's house / team's house), with batch numbers + expiry dates — the opening balances.
+- [ ] **Packaging inventory**: box types/sizes stocked and current counts. Any other consumables to track (ice packs, bac water, syringes)?
+- [ ] **Typical costs**: recent per-batch purchase costs and a typical Janoshik test fee, so margin outputs can be sanity-checked.
 
-## Catalog & products
+## Smaller decisions (can be settled during the build)
 
-- 🔴 Full product list with variants: which compounds, which dosages, which supplies? (Needed to seed the catalog — even a photo of a price list works.)
-- Do products have batch/lot numbers or expiry dates that need tracking? (Common for vials; changes inventory model significantly if yes.)
-- Any storage constraints (cold chain?) that affect where stock can be held?
+- **Testing:** is every batch tested at Janoshik, or only some? Flat fee per test or varies by compound? (Affects how testing cost is allocated in F1.)
+- **Landed cost components:** besides product + testing — supplier shipping? customs? payment/forex fees? Include which in v1?
+- **Ops visibility:** should the ops team see costs/margins, or admin-only (current default: admin-only)?
+- **COD:** who does COD handoffs today — fulfiller, Nadeem, or a runner? Does COD cash need tracking in the app?
+- **Cold chain in transit:** when do you use Celsius Express Chilled/Frozen vs normal couriers? Any packing rules per method worth encoding in the prep queue (e.g. "frozen → needs ice pack + Celsius")?
+- **Expiry policy:** how far before expiry should a batch be flagged (30/60/90 days)? Can near-expiry vials still be sold?
+- **Data entry:** who besides Nadeem will enter orders from WhatsApp — will the fulfiller also do intake?
+- **Existing records:** any spreadsheets/notes with past orders or purchases worth importing, or start clean?
+- **Team devices:** Android/iPhone for the ops team (PWA install instructions differ)?
 
-## Inventory
+## Resolved (for the record)
 
-- 🔴 Who are all the stock holders? Just you + one fulfiller, or others (second employee, seller consignment stock)?
-- Do sellers ever hold stock themselves (consignment) and fulfil directly?
-- When a new order comes in, who decides whether it ships from your stock vs the fulfiller's stock? Any rule (e.g. always fulfiller unless out)?
-- How often do you want physical stock counts (weekly/monthly)?
-
-## Orders
-
-- 🔴 What's the minimum info a seller must provide at submission? Is delivery address always known at submission time, or later?
-- What payment methods do customers/sellers use (bank transfer, COD, cash to seller)? Who collects — seller or Indexa?
-- 🔴 When is an order "confirmed" — on submission, on payment, on your approval?
-- Are partial fulfilments a thing (send 2 of 3 vials now)?
-- Cancellations/returns: do they happen, and what happens to stock/money?
-
-## Delivery & scheduling
-
-- 🔴 Full list of delivery methods used (Lalamove, which couriers, pickup?) and roughly what share of orders each covers.
-- Who books Lalamove today, and is it one batch run (multiple orders per run) or per-order?
-- Are there fixed dispatch days (e.g. Lalamove runs only Sat) or fully ad-hoc?
-- Who pays delivery — customer, seller, or absorbed by Indexa? (Feeds margin calc F4.)
-
-## Restocking & costing
-
-- 🔴 How do you buy stock today — how many suppliers, typical lead time, typical batch size?
-- Does unit cost change meaningfully between batches? Which costs should count in "landed cost" (product, shipping, customs, payment fees)?
-- Current pricing: one standard price per SKU, or does it vary by seller/volume?
-
-## People & adoption
-
-- 🔴 Will sellers actually use a form/app, or will some keep sending WhatsApp texts no matter what? (If the latter, the paste-to-parse assist C5 gets promoted to P0 and an admin data-entry flow is essential.)
-- Fulfiller's comfort with apps: Android/iPhone? Any language preference for the UI?
-- Who besides you should see margins? (Default: only you.)
-
-## Tech
-
-- Confirm direction: Supabase + web app on Vercel? Any preference for how sellers access it (WhatsApp-shared link vs installed PWA)?
-- Any existing data to import (spreadsheets, notes with current stock/prices)?
-- Budget/appetite: hand-built app vs internal-tool builder (Retool) for the admin side first?
-
----
-
-### How to use this doc
-
-Work through the 🔴 items first — each unblocks a P0 module. Suggested method: one voice-note or chat session per section, then we update `01-current-state.md` and `02-requirements.md` and delete answered questions from here.
+Single seller, WhatsApp-only, no seller login · internal app for Nadeem + ops team · seller price vs public price tiers · ~20 vials/month, fluctuating · website checkout hands to WhatsApp by design · QR-on-box drives direct sales goal · batches with batch numbers + expiry, cold chain, two storage locations · multiple suppliers (one main) · Janoshik testing costs count · order = standard e-commerce fields · payment to Nadeem's bank via QR/transfer with receipt proof · **confirmed on payment** · no partial fulfilment · no cancellations/returns · delivery = Lalamove (one order per run, no fixed days), COD, self-pickup, courier postage (City-Link, Best, DHL eC, KEX, Celsius chilled/frozen, Pos Laju, Aramex, LEX, Skynet, Pos MELPlus, SPX, J&T) · delivery payer varies (customer/Indexa/seller) · stack = Supabase + Vercel (default domain).

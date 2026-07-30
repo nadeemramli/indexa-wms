@@ -2,27 +2,30 @@
 
 Order & stock management system for **Indexa Lab** ([indexalab.shop](https://indexalab.shop/)) — centralizing inventory, order intake, fulfilment, costing/margins, and delivery scheduling that currently live in WhatsApp messages and people's heads.
 
-> **Status:** 📋 Discovery / requirements phase. No application code yet — we are documenting the business and requirements before building.
+> **Status:** 📋 Requirements phase — discovery largely done, data model drafted, ready to move toward schema + build.
+
+## What it is
+
+An **internal operations app** for Nadeem and the operational team. Sellers and customers do **not** log in — they keep dealing via WhatsApp (by design). The team records orders, tracks stock across locations, and manages fulfilment inside the app.
 
 ## Why this exists
 
 Today the operation runs on manual coordination:
 
-- Orders arrive as free-text messages from sellers (name / phone / quantity).
-- Inventory is split between two people (owner + fulfiller), with no shared, live view — "how much stock do we have?" requires asking someone.
-- Restocking decisions, costing, and margin calculations are ad-hoc.
-- Delivery scheduling (e.g. "Lalamove this Saturday" vs "next week") is tracked mentally, but it determines what gets prepared and when.
-
-INDEXA WMS centralizes all of this into one system with a single source of truth.
+- Orders arrive as free-text WhatsApp messages (name / phone / quantity), from a seller or directly from customers via the website (checkout intentionally hands off to WhatsApp).
+- Inventory is split between two cold-chain storage locations (Nadeem's house + team's house) with no shared, live view.
+- Products are bought in batches with batch numbers and expiry dates — none of it tracked in a system.
+- Restocking, landed costing (including lab testing via [Janoshik](https://janoshik.com/)), and margins are ad-hoc.
+- Delivery scheduling (Lalamove runs, courier postage, COD, self-pickup) is tracked mentally, but it determines what gets prepared and when.
 
 ## Core problem areas (v1 scope)
 
 | # | Area | Problem today |
 |---|------|---------------|
-| 1 | **Inventory** | Stock split across two holders, no live central count |
-| 2 | **Order management** | Free-text order submission; no status/progress tracking |
-| 3 | **Restocking** | No reorder signals; restock decisions are reactive |
-| 4 | **Costing & margin** | Cost price, selling price, and margin not systematically tracked |
+| 1 | **Inventory** | Stock split across two locations, batch/expiry untracked, no live central count |
+| 2 | **Order management** | Free-text WhatsApp orders; no status/progress tracking |
+| 3 | **Restocking** | No reorder signals; multiple suppliers with lead times untracked |
+| 4 | **Costing & margin** | Batch costs, testing costs, seller vs public pricing not systematically tracked |
 | 5 | **Delivery scheduling** | Delivery method + date determine prep work, but nothing is scheduled in a system |
 
 ## Documentation
@@ -31,17 +34,14 @@ INDEXA WMS centralizes all of this into one system with a single source of truth
 |-----|---------|
 | [`docs/01-current-state.md`](docs/01-current-state.md) | How the business operates today (as-is) |
 | [`docs/02-requirements.md`](docs/02-requirements.md) | Feature specs / functional requirements for v1 (to-be) |
-| [`docs/03-open-questions.md`](docs/03-open-questions.md) | Discovery questions to answer before building |
+| [`docs/03-open-questions.md`](docs/03-open-questions.md) | Remaining questions before/while building |
+| [`docs/04-data-model.md`](docs/04-data-model.md) | Draft data model for the Supabase schema |
 
-## Tech stack (proposed, not final)
+## Tech stack (decided)
 
-Nothing is locked in yet. Candidate direction, based on tools already in use:
-
-- **Backend / DB:** Supabase (Postgres, Auth, Row Level Security, Edge Functions)
-- **Frontend:** Web app (mobile-friendly — the fulfiller will use it from a phone), deployed on Vercel
-- **Possible fast-track:** internal tool builder (e.g. Retool) for an admin back-office while the seller/fulfiller-facing app is built properly
-
-See open questions before committing to any of this.
+- **Backend / DB:** Supabase — Postgres, Auth (team logins only), Row Level Security
+- **Frontend:** Mobile-first web app deployed on **Vercel** (default `.vercel.app` domain is fine)
+- **Currency/locale:** MYR, Malaysia (Asia/Kuala_Lumpur)
 
 ## Working agreement
 
