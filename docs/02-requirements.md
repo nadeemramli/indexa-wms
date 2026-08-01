@@ -8,6 +8,8 @@ Functional requirements for INDEXA WMS v1, organized by module. Each module maps
 - Tech: Supabase + Vercel web app, mobile-first.
 - Batch/lot + expiry tracking is **mandatory** (cold-chain vials, batch numbers, expiry dates).
 - Order confirmed **on payment**. No partial fulfilment. No cancellations/returns flow (a simple void/cancel status is enough for mistakes).
+- **Cash & cashflow tracked** (Module H): single bank account, admin-only visibility, auto-linked to payments/purchases/testing/delivery.
+- **BOM per product**: shipping auto-consumes packaging components (box, label) alongside the vial.
 
 Priorities: **P0** = v1 must-have · **P1** = v1 nice-to-have · **P2** = later.
 
@@ -20,10 +22,11 @@ Priorities: **P0** = v1 must-have · **P1** = v1 nice-to-have · **P2** = later.
 | A1 | Product list: compound name, SKU, dosage variant, category, active/inactive. Seed with actual inventory: GHK-Cu, Retatrutide, BPC-157, etc., each with its own dosages | P0 |
 | A2 | Each (compound × dosage) is a distinct SKU | P0 |
 | A3 | Two price tiers per SKU: **seller price** and **public price** | P0 |
-| A4 | **Packaging materials as inventory items** (branded boxes; later: bac water, syringes, ice packs if stocked) — tracked like stock but not sold | P0 |
-| A5 | Product bundles/blends sold as one line item | P2 |
+| A4 | **Packaging & consumables as inventory items** (branded boxes, labels; later: bac water, syringes, ice packs) — tracked like stock but not sold | P0 |
+| A5 | **Component list (BOM) per sellable SKU**: 1 finished unit = 1 vial + 1 box + 1 label (+ ice pack, …) — editable per product | P0 |
+| A6 | Product bundles/blends sold as one line item | P2 |
 
-**Why:** "1 vial 60mg" must resolve to exactly one SKU, at the right price tier. Boxes are P0 because running out of boxes blocks shipping just as hard as running out of vials.
+**Why:** "1 vial 60mg" must resolve to exactly one SKU, at the right price tier. Boxes/labels are P0 because running out of them blocks shipping just as hard as running out of vials — and the BOM (A5) is what lets the system consume them automatically (see D3).
 
 ---
 
@@ -68,7 +71,7 @@ Priorities: **P0** = v1 must-have · **P1** = v1 nice-to-have · **P2** = later.
 |----|-------------|----------|
 | D1 | Each order carries **delivery method** and **target dispatch date**. Methods: Lalamove, COD/meet-up, self-pickup, courier postage (City-Link, Best Express, DHL eC, KEX, Celsius Express Chilled/Frozen, Pos Laju, Aramex, LEX, Skynet, Pos MELPlus, SPX, J&T, …— maintainable list, not hardcoded) | P0 |
 | D2 | **Prep queue**: what must be packed, grouped by dispatch date + method ("Saturday: 1 Lalamove run, 3 courier parcels") | P0 |
-| D3 | Marking Packed/Shipped deducts stock (FEFO suggestion by batch) from the fulfilling location and records which **batch** each vial came from | P0 |
+| D3 | Marking Packed/Shipped deducts stock (FEFO suggestion by batch) from the fulfilling location, records which **batch** each vial came from, and **auto-consumes packaging components per the product's BOM** (box, label, …) with manual override | P0 |
 | D4 | **Delivery cost + who pays** (customer / Indexa / seller) captured per order — feeds margin | P0 |
 | D5 | Tracking number / Lalamove reference field per order | P1 |
 | D6 | Calendar/agenda view of upcoming dispatches | P1 |
@@ -113,9 +116,44 @@ Priorities: **P0** = v1 must-have · **P1** = v1 nice-to-have · **P2** = later.
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| G1 | Roles: **Admin** (Nadeem — everything incl. costs/margins/pricing) and **Ops** (inventory, orders, fulfilment — no cost/margin visibility by default; configurable) | P0 |
+| G1 | Roles: **Admin** (Nadeem — everything incl. costs/margins/pricing/cash) and **Ops** (inventory, orders, fulfilment — no cost/margin/cash visibility) | P0 |
 | G2 | Supabase Auth, email login, small fixed user set (no self-signup) | P0 |
 | G3 | Audit trail on order status changes and stock movements (who/when) | P1 |
+
+---
+
+## Module H — Cash Position & Cashflow
+
+Single tracked account: **Nadeem's business bank account** (where QR/transfer payments land). COD cash is logged as a deposit when banked in. **Admin-only module** — ops never sees cash, expenses, or salary.
+
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| H1 | **Cash position**: opening balance entered once; current balance = opening + all recorded inflows − outflows. Balance is derived, never edited (same principle as stock) | P0 |
+| H2 | **Inflows recorded automatically** from order payments (Module C4) — no double entry. Manual inflows for anything else (capital top-up, refunds from suppliers) | P0 |
+| H3 | **Outflows from operations recorded automatically** where the system already knows them: stock purchases (E2, when paid), testing fees (E4), Indexa-paid delivery costs (D4) | P0 |
+| H4 | **Manual expense entry** with category + date + amount + note (+ receipt photo): salary, packaging/label printing, supplies, subscriptions, marketing, bank/payment fees, misc | P0 |
+| H5 | Expense **categories seeded** with fixed vs variable tagging (see table below), editable | P0 |
+| H6 | **Monthly cashflow view**: opening balance → inflows (by source) → outflows (by category) → closing balance | P0 |
+| H7 | **Recurring expenses** (e.g. salary on the 1st): template that pre-fills a pending entry to confirm each month | P1 |
+| H8 | Dashboard tile: cash position + inventory value at landed cost = working capital snapshot; simple runway indicator (months of fixed costs covered) | P1 |
+| H9 | Mark purchases as paid now vs pay later (supplier credit) so cash timing ≠ order timing | P1 |
+
+**Seed expense categories:**
+
+| Category | Type | Auto/manual |
+|----------|------|-------------|
+| Stock purchases | Variable (COGS) | Auto from E2 |
+| Lab testing (Janoshik) | Variable (COGS) | Auto from E4 |
+| Packaging & labels (printing/production) | Variable | Manual (purchase of boxes/labels also stocks them in via A4) |
+| Delivery paid by Indexa (Lalamove, couriers) | Variable | Auto from D4 |
+| Payment/bank/forex fees | Variable | Manual |
+| Marketing / ads | Variable | Manual |
+| Salary (ops team) | Fixed | Manual → recurring (H7) |
+| Software & subscriptions (domain, tools) | Fixed | Manual → recurring |
+| Storage/utilities contribution (fridge/freezer) | Fixed | Manual, optional |
+| Miscellaneous | — | Manual |
+
+**Why:** margin (Module F) says whether each sale is worth it; cashflow (H) says whether the company can pay for the next batch and this month's salary. Keeping auto-links (H2/H3) means the cash ledger mostly writes itself — only truly external costs (salary, printing, fees) need manual entry. This is a cash ledger, **not** double-entry accounting — deliberately.
 
 ---
 
@@ -138,13 +176,16 @@ Priorities: **P0** = v1 must-have · **P1** = v1 nice-to-have · **P2** = later.
 - Automated Lalamove API booking (manual booking; system tracks the schedule)
 - WhatsApp API automation (revisit as C9/P2)
 - Returns/cancellation workflows (a `Void` status suffices)
-- Accounting integration
+- Full double-entry accounting, e-invoicing, tax filing (Module H is a cash ledger only)
 - Marketplace integrations
 
 ## Suggested v1 build order
 
-1. **Catalog + batch inventory (A, B)** — immediate value: shared live stock with expiry across both houses
+1. **Catalog + batch inventory + BOM (A, B)** — immediate value: shared live stock with expiry across both houses
 2. **Orders with paste-to-parse + payment gating (C)** — structured intake, statuses, proof attached
-3. **Fulfilment queue + delivery scheduling (D)** — the "what ships when" view
+3. **Fulfilment queue + delivery scheduling (D)** — the "what ships when" view, BOM auto-consumption
 4. **Purchasing/receiving + costing (E, F)** — batches enter with real landed cost; margins light up
-5. **Role hardening + audit (G)**
+5. **Cash & expenses (H)** — opening balance + auto-linked flows + manual expenses; monthly view
+6. **Role hardening + audit (G)** — enforced throughout, finalized last
+
+Also update the out-of-scope list: full double-entry accounting / e-invoicing stays **out**; the cash module is a ledger, not an accounting system.

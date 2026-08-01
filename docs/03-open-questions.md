@@ -10,6 +10,13 @@ Updated 2026-07-30 after discovery session with Nadeem. Most 🔴 blockers are r
 - [ ] **Packaging inventory**: box types/sizes stocked and current counts. Any other consumables to track (ice packs, bac water, syringes)?
 - [ ] **Typical costs**: recent per-batch purchase costs and a typical Janoshik test fee, so margin outputs can be sanity-checked.
 
+## Cash module — data to enter at setup (admin only)
+
+- [ ] **Opening bank balance** and the date it's "as of".
+- [ ] **Recurring fixed costs**: salary amount + pay day; any subscriptions (domain, tools) with amounts.
+- [ ] Recent packaging/label production costs (for the packaging expense category baseline).
+- [ ] Typical payment/bank/forex fees when paying suppliers (flat or %?).
+
 ## Smaller decisions (can be settled during the build)
 
 - **Testing:** is every batch tested at Janoshik, or only some? Flat fee per test or varies by compound? (Affects how testing cost is allocated in F1.)
@@ -23,5 +30,8 @@ Updated 2026-07-30 after discovery session with Nadeem. Most 🔴 blockers are r
 - **Team devices:** Android/iPhone for the ops team (PWA install instructions differ)?
 
 ## Resolved (for the record)
+
+**2026-08-01:** cash & cashflow module added (single bank account, balance derived from ledger, admin-only) · BOM per product with auto-consumption of box/label at ship (manual override) · ops role sees no cash/expenses/margins.
+
 
 Single seller, WhatsApp-only, no seller login · internal app for Nadeem + ops team · seller price vs public price tiers · ~20 vials/month, fluctuating · website checkout hands to WhatsApp by design · QR-on-box drives direct sales goal · batches with batch numbers + expiry, cold chain, two storage locations · multiple suppliers (one main) · Janoshik testing costs count · order = standard e-commerce fields · payment to Nadeem's bank via QR/transfer with receipt proof · **confirmed on payment** · no partial fulfilment · no cancellations/returns · delivery = Lalamove (one order per run, no fixed days), COD, self-pickup, courier postage (City-Link, Best, DHL eC, KEX, Celsius chilled/frozen, Pos Laju, Aramex, LEX, Skynet, Pos MELPlus, SPX, J&T) · delivery payer varies (customer/Indexa/seller) · stack = Supabase + Vercel (default domain).

@@ -7,6 +7,7 @@ Draft entity model for the Supabase (Postgres) schema, derived from [`02-require
 1. **Stock is derived, never edited.** On-hand quantity = sum of `stock_movements`. No editable "quantity" field anywhere — that's what makes counts trustworthy (B4).
 2. **Batches are first-class.** Physical reality: vials arrive in batches with batch numbers, expiry, a test certificate, and a landed cost. Every unit in and out is tied to a batch.
 3. **Money facts are captured at the moment they happen.** Order lines snapshot the price charged; fulfilments snapshot the batch (and thus its landed cost). Margin is then pure arithmetic, never reconstruction.
+4. **Cash balance is derived, never edited** — same as stock: opening balance + Σ cash_transactions. Auto-rows come from payments, purchases, testing, and Indexa-paid delivery; only external expenses (salary, printing, fees) are manual.
 
 ## Entity overview
 
@@ -15,11 +16,15 @@ suppliers ──< purchases ──< purchase_lines
                                 │ (receiving)
                                 ▼
 products ──< product_batches ──< stock_movements >── locations
-   │                                    ▲
-   │                                    │ (fulfilment deducts)
-   └──< order_lines >── orders ──< payments
-              │            ├── delivery info (method, date, cost, payer)
-              └── batch allocation (which batch filled which line)
+   │  │                                 ▲
+   │  └──< product_components (BOM)     │ (fulfilment deducts vial + BOM components)
+   │                                    │
+   └──< order_lines >── orders ──< payments ──────────┐
+              │            ├── delivery info           │ (auto inflow)
+              │            │   (method, date,          ▼
+              │            │    cost, payer) ──→ cash_transactions ←── purchases / batches
+              └── batch allocation                 (auto outflows: stock, testing, delivery;
+                                                    manual: salary, packaging, fees, …)
 ```
 
 ## Tables
@@ -111,8 +116,36 @@ Append-only ledger (B4). One row per change, signed quantity.
 | id, order_id, amount, method (`transfer`/`qr`/`cod`), paid_at | order flips to `confirmed` when payments ≥ order total (C3/C4) |
 | proof_url | receipt/QR screenshot in Supabase Storage |
 
+### `product_components` (BOM, A5)
+What gets consumed when one unit of a sellable SKU ships.
+
+| Column | Notes |
+|--------|-------|
+| id, product_id | the sellable vial SKU |
+| component_product_id | a `kind=packaging/supply` product (box, label, ice pack) |
+| qty_per_unit | usually 1 |
+
+*On Packed/Shipped, the app writes `fulfil` stock movements for the vial (batch-tracked) **and** each BOM component (D3). Manual override allowed (e.g. no box used for self-pickup).*
+
 ### `sellers`
 | id, name, phone, notes | one row today; enables C5/F3 and future growth |
+
+### `cash_transactions` (Module H — admin-only via RLS)
+Single bank account; append-only. Balance = opening balance (config) + Σ amount.
+
+| Column | Notes |
+|--------|-------|
+| id, amount | + inflow / − outflow, MYR |
+| happened_at | value date (when it hit the bank) |
+| category | `sale` \| `stock_purchase` \| `testing` \| `delivery` \| `packaging` \| `salary` \| `subscription` \| `fees` \| `marketing` \| `capital` \| `misc` (seeded, editable) |
+| cost_type | `fixed` \| `variable` \| null (for inflows) |
+| payment_id / purchase_id / batch_id / order_id | nullable links — set when the row was auto-created (H2/H3), so cash ties back to its source; null for manual entries |
+| note, receipt_url, created_by | receipt photo in Supabase Storage |
+
+*Auto-creation: a `payments` insert ⇒ `sale` inflow · marking a purchase paid ⇒ `stock_purchase` outflow · batch testing fee ⇒ `testing` outflow · Indexa-paid delivery ⇒ `delivery` outflow. Deleting/voiding the source reverses the cash row.*
+
+### `recurring_expenses` (H7, P1)
+| id, category, amount, day_of_month, active | pre-fills a pending `cash_transactions` entry to confirm monthly (salary, subscriptions) |
 
 ### `app_users` (Supabase Auth + profile)
 | id (auth uid), name, role (`admin`/`ops`) | RLS: ops can't select cost/margin columns (G1) |
@@ -126,6 +159,17 @@ line_margin = order_lines.unit_price × qty
 ```
 
 Views: margin per order / product / channel / month (F3) as Postgres views — no denormalized margin columns to drift out of sync.
+
+## Cashflow (H6) — also pure queries
+
+```
+cash_position  = opening_balance + Σ cash_transactions.amount
+monthly view   = group by month, category: opening → inflows → outflows → closing
+working capital= cash_position + Σ(remaining batch qty × landed_unit_cost)
+runway         ≈ cash_position ÷ avg monthly fixed outflows
+```
+
+RLS: `cash_transactions` and `recurring_expenses` readable/writable by `admin` role only (H module is invisible to ops).
 
 ## Open modeling questions
 

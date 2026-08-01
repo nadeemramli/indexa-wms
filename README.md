@@ -27,6 +27,7 @@ Today the operation runs on manual coordination:
 | 3 | **Restocking** | No reorder signals; multiple suppliers with lead times untracked |
 | 4 | **Costing & margin** | Batch costs, testing costs, seller vs public pricing not systematically tracked |
 | 5 | **Delivery scheduling** | Delivery method + date determine prep work, but nothing is scheduled in a system |
+| 6 | **Cash & cashflow** | Cash position, stock purchases, salary, packaging and other fixed/variable costs not tracked anywhere |
 
 ## Documentation
 
