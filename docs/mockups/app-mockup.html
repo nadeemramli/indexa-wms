@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INDEXA WMS — UI Mockup v0.1</title>
+<style>
+  :root{
+    --bg:#F8FAFC; --surface:#FFFFFF; --line:#E2E8F0;
+    --ink:#0F172A; --ink-2:#475569; --ink-3:#94A3B8;
+    --teal:#0F766E; --teal-soft:#CCFBF1;
+    --amber:#B45309; --amber-soft:#FEF3C7;
+    --red:#B91C1C; --red-soft:#FEE2E2;
+    --green:#15803D; --green-soft:#DCFCE7;
+    --violet:#6D28D9; --violet-soft:#EDE9FE;
+    --blue:#1D4ED8; --blue-soft:#DBEAFE;
+    --mono:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0B1220;font-family:var(--sans);color:var(--ink);min-height:100vh;
+       display:flex;flex-direction:column;align-items:center;padding:28px 16px 60px}
+  /* ---------- stage chrome ---------- */
+  .stage-head{color:#E2E8F0;text-align:center;max-width:640px;margin-bottom:20px}
+  .stage-head h1{font-size:17px;font-weight:600;letter-spacing:.08em}
+  .stage-head h1 span{color:#5EEAD4}
+  .stage-head p{font-size:12.5px;color:#94A3B8;margin-top:6px;line-height:1.5}
+  .controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:14px 0 22px}
+  .seg{display:inline-flex;background:#131C2E;border:1px solid #24304A;border-radius:99px;padding:3px}
+  .seg button{border:0;background:transparent;color:#8CA0C0;font-size:12px;font-weight:600;
+              padding:6px 14px;border-radius:99px;cursor:pointer;font-family:var(--sans)}
+  .seg button.on{background:#0F766E;color:#fff}
+  .seg button:focus-visible{outline:2px solid #5EEAD4;outline-offset:2px}
+  /* ---------- phone ---------- */
+  .phone{width:375px;max-width:100%;background:var(--bg);border-radius:38px;border:10px solid #1E293B;
+         box-shadow:0 30px 80px rgba(0,0,0,.55);overflow:hidden;position:relative}
+  .statusbar{height:34px;display:flex;align-items:center;justify-content:space-between;
+             padding:0 22px;font-size:11.5px;font-weight:600;color:var(--ink);background:var(--bg)}
+  .appbar{display:flex;align-items:center;justify-content:space-between;padding:6px 16px 10px;background:var(--bg)}
+  .appbar .brand{font-size:15px;font-weight:800;letter-spacing:.14em;color:var(--teal)}
+  .appbar .who{font-size:11.5px;color:var(--ink-2)}
+  .viewport{height:600px;overflow-y:auto;background:var(--bg);padding:0 12px 84px;scrollbar-width:thin}
+  /* ---------- tab bar ---------- */
+  .tabbar{position:absolute;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);
+          border-top:1px solid var(--line);display:flex;align-items:flex-end;
+          justify-content:space-around;padding:6px 6px 14px;backdrop-filter:blur(6px)}
+  .tab{border:0;background:none;font-family:var(--sans);font-size:10px;color:var(--ink-3);
+       display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;width:56px}
+  .tab .ic{font-size:19px;line-height:1}
+  .tab.on{color:var(--teal);font-weight:700}
+  .tab:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:8px}
+  .fab{width:52px;height:52px;border-radius:50%;background:var(--teal);color:#fff;border:0;
+       font-size:26px;line-height:1;cursor:pointer;box-shadow:0 6px 16px rgba(15,118,110,.45);
+       transform:translateY(-14px)}
+  .fab:focus-visible{outline:3px solid var(--teal-soft)}
+  /* ---------- shared bits ---------- */
+  .screen{display:none}
+  .screen.on{display:block}
+  .h{font-size:19px;font-weight:800;margin:10px 4px 12px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .muted{color:var(--ink-2);font-size:11.5px}
+  .tiny{color:var(--ink-3);font-size:10.5px}
+  .mono{font-family:var(--mono);font-size:11px;letter-spacing:0}
+  .chip{font-size:10px;font-weight:700;border-radius:99px;padding:2px 9px;white-space:nowrap}
+  .chip.draft{background:#F1F5F9;color:var(--ink-2)}
+  .chip.confirmed{background:var(--blue-soft);color:var(--blue)}
+  .chip.packed{background:var(--amber-soft);color:var(--amber)}
+  .chip.shipped{background:var(--violet-soft);color:var(--violet)}
+  .chip.done{background:var(--green-soft);color:var(--green)}
+  .warn{color:var(--amber);font-weight:700}
+  .bad{color:var(--red);font-weight:700}
+  .good{color:var(--green);font-weight:700}
+  .btn{display:block;width:100%;border:0;border-radius:11px;background:var(--teal);color:#fff;
+       font-family:var(--sans);font-size:13.5px;font-weight:700;padding:11px;cursor:pointer}
+  .btn.ghost{background:#F1F5F9;color:var(--ink)}
+  .btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .sect{font-size:10.5px;font-weight:800;letter-spacing:.1em;color:var(--ink-3);margin:14px 4px 6px}
+  input,select{font-family:var(--sans);font-size:12.5px;color:var(--ink);background:#fff;
+        border:1px solid var(--line);border-radius:9px;padding:8px 10px;width:100%}
+  input:focus,select:focus{outline:2px solid var(--teal);border-color:var(--teal)}
+  .field{margin-bottom:8px}
+  .field label{display:block;font-size:10.5px;font-weight:700;color:var(--ink-2);margin:0 2px 3px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  /* role: ops hides money */
+  body.ops .admin-only{display:none!important}
+  .legend{max-width:640px;color:#8CA0C0;font-size:11.5px;line-height:1.7;margin-top:22px;text-align:center}
+  .legend b{color:#CBD5E1}
+  @media (prefers-reduced-motion:no-preference){
+    .screen.on{animation:fade .18s ease}
+    @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  }
+</style>
+</head>
+<body>
+
+<div class="stage-head">
+  <h1>INDEXA <span>WMS</span> — UI MOCKUP v0.1</h1>
+  <p>Clickable reference for docs/06-ui-ux.md. Tap the bottom tabs. Switch role to see how the
+     app reshapes for the ops team (no cash, no prices, no margins). Sample data only.</p>
+</div>
+
+<div class="controls">
+  <div class="seg" role="tablist" aria-label="Role">
+    <button class="on" id="roleAdmin" onclick="setRole('admin')">Admin · Nadeem</button>
+    <button id="roleOps" onclick="setRole('ops')">Ops · fulfiller</button>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span>▮▮▮ ᯤ 87%</span></div>
+  <div class="appbar">
+    <span class="brand">INDEXA</span>
+    <span class="who" id="whoami">Salam, Nadeem 👋</span>
+  </div>
+
+  <div class="viewport" id="viewport">
+
+    <!-- ================= HOME ================= -->
+    <section class="screen on" id="scr-home">
+      <div class="grid2 admin-only">
+        <div class="card"><div class="tiny">CASH POSITION</div>
+          <div style="font-size:20px;font-weight:800;margin-top:2px">RM 12,450</div>
+          <div class="tiny good">derived · never edited</div></div>
+        <div class="card"><div class="tiny">MARGIN · AUG</div>
+          <div style="font-size:20px;font-weight:800;margin-top:2px">RM 3,180</div>
+          <div class="tiny">seller 68% · direct 32%</div></div>
+      </div>
+      <div class="card" onclick="go('queue')" style="cursor:pointer">
+        <div class="row"><b style="font-size:13px">🚚 Today — Sat 8 Aug</b><span class="tiny">→ Queue</span></div>
+        <div class="muted" style="margin-top:4px">1 Lalamove run · 2 courier parcels · 1 pickup</div>
+      </div>
+      <div class="card">
+        <div class="row"><b style="font-size:13px">⚠ Needs attention</b></div>
+        <div style="margin-top:6px;font-size:12.5px" class="warn">Retatrutide 60mg below reorder point — 4 left</div>
+        <div style="margin-top:4px;font-size:12.5px" class="warn">Batch <span class="mono">#B2405-03</span> (BPC-157) expires in 21 days</div>
+        <div style="margin-top:4px;font-size:12.5px" class="bad">Order <span class="mono">#IDX-0041</span> short stock — GHK-Cu 50mg</div>
+      </div>
+      <div class="sect">RECENT ORDERS</div>
+      <div class="card"><div class="row"><div><b style="font-size:12.5px">Rohaya Binti Ismail</b>
+        <span class="mono tiny"> #IDX-0042</span><div class="tiny">1× Reta 60mg · Lalamove · Sat</div></div>
+        <span class="chip confirmed">CONFIRMED</span></div></div>
+      <div class="card"><div class="row"><div><b style="font-size:12.5px">Ahmad Faiz</b>
+        <span class="mono tiny"> #IDX-0040</span><div class="tiny">2× GHK-Cu 50mg · J&T · Sat</div></div>
+        <span class="chip shipped">SHIPPED</span></div></div>
+      <div class="card"><div class="row"><div><b style="font-size:12.5px">Siti Mariam</b>
+        <span class="mono tiny"> #IDX-0039</span><div class="tiny">1× BPC-157 5mg · pickup</div></div>
+        <span class="chip done">COMPLETED</span></div></div>
+    </section>
+
+    <!-- ================= STOCK ================= -->
+    <section class="screen" id="scr-stock">
+      <div class="h">Stok</div>
+      <div class="field"><input placeholder="🔍  Search product…" aria-label="Search product"></div>
+      <div class="sect">VIALS</div>
+      <div class="card"><div class="row">
+        <div><b style="font-size:13px">Retatrutide 60mg</b>
+          <div class="tiny">N-house 1 · A-house 3 · next exp <span class="mono">2026-11 #B2406-11</span></div></div>
+        <div style="text-align:right"><span class="warn" style="font-size:17px">4</span><div class="tiny">available</div></div>
+      </div></div>
+      <div class="card"><div class="row">
+        <div><b style="font-size:13px">GHK-Cu 50mg</b>
+          <div class="tiny">N-house 20 · A-house 3 · next exp <span class="mono">2027-02 #B2407-02</span></div></div>
+        <div style="text-align:right"><span style="font-size:17px;font-weight:800">23</span><div class="tiny">available</div></div>
+      </div></div>
+      <div class="card"><div class="row">
+        <div><b style="font-size:13px">BPC-157 5mg</b>
+          <div class="tiny">N-house 8 · A-house 4 · <span class="warn">exp 21d</span> <span class="mono">#B2405-03</span></div></div>
+        <div style="text-align:right"><span style="font-size:17px;font-weight:800">12</span><div class="tiny">available</div></div>
+      </div></div>
+      <div class="sect">PACKAGING & SUPPLIES</div>
+      <div class="card"><div class="row"><b style="font-size:13px">Box — branded (QR)</b>
+        <span style="font-size:17px;font-weight:800">41</span></div></div>
+      <div class="card"><div class="row"><b style="font-size:13px">Labels</b>
+        <span style="font-size:17px;font-weight:800">120</span></div></div>
+      <div class="card"><div class="row"><b style="font-size:13px">Ice packs</b>
+        <span class="warn" style="font-size:17px">6</span></div></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn ghost" style="flex:1">Receive</button>
+        <button class="btn ghost" style="flex:1">Transfer</button>
+        <button class="btn ghost" style="flex:1">Adjust</button>
+      </div>
+      <p class="tiny" style="margin:10px 4px">Every change is a movement with who/when/why — quantities are never edited directly.</p>
+    </section>
+
+    <!-- ================= NEW ORDER ================= -->
+    <section class="screen" id="scr-new">
+      <div class="h">New Order</div>
+      <div class="card" style="border-style:dashed;background:#F0FDFA">
+        <div class="row"><b style="font-size:12.5px">📋 Paste from WhatsApp</b>
+          <button class="btn" style="width:auto;padding:6px 12px;font-size:11.5px" onclick="demoParse()">Paste sample</button></div>
+        <div class="mono" id="pasteBox" style="margin-top:8px;color:var(--ink-3);min-height:30px">tap “Paste sample” to see the parser fill the form ↓</div>
+      </div>
+      <div class="field"><label>Nama</label><input id="f-nama" placeholder="—"></div>
+      <div class="field"><label>Phone</label><input id="f-phone" placeholder="—"></div>
+      <div class="grid2">
+        <div class="field"><label>Item</label><select id="f-item"><option>—</option><option>Retatrutide 60mg</option><option>GHK-Cu 50mg</option><option>BPC-157 5mg</option></select></div>
+        <div class="field"><label>Qty</label><input id="f-qty" placeholder="—"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Channel</label><select id="f-channel"><option>Seller</option><option>Direct</option></select></div>
+        <div class="field admin-only"><label>Price (auto by tier)</label><input id="f-price" value="RM 350 · seller"></div>
+      </div>
+      <div class="field"><label>Address</label><input id="f-addr" placeholder="—"></div>
+      <div class="grid2">
+        <div class="field"><label>Delivery</label><select><option>Lalamove</option><option>J&T Express</option><option>Celsius — Chilled</option><option>SPX Xpress</option><option>COD / meet-up</option><option>Self-pickup</option></select></div>
+        <div class="field"><label>Dispatch</label><select><option>Sat 8 Aug</option><option>Mon 10 Aug</option><option>Custom…</option></select></div>
+      </div>
+      <div class="grid2 admin-only">
+        <div class="field"><label>Delivery fee</label><input value="RM 25"></div>
+        <div class="field"><label>Paid by</label><select><option>Customer</option><option>Indexa</option><option>Seller</option></select></div>
+      </div>
+      <button class="btn" onclick="alert('Saved as DRAFT (unpaid).\nAdd a payment + receipt to confirm — stock reserves automatically.')">Save Draft</button>
+      <p class="tiny" style="margin:8px 4px">Raw pasted text is always kept with the order. Order confirms only when payment is recorded.</p>
+    </section>
+
+    <!-- ================= QUEUE ================= -->
+    <section class="screen" id="scr-queue">
+      <div class="h">Queue</div>
+      <div class="sect">SAT 8 AUG — TODAY</div>
+      <div class="tiny" style="margin:0 4px 6px">🛵 LALAMOVE · 1 order</div>
+      <div class="card" id="packCard">
+        <div class="row"><div><b style="font-size:12.5px">Rohaya Binti Ismail</b>
+          <span class="mono tiny">#IDX-0042</span><div class="tiny">Shah Alam · fee RM25</div></div>
+          <span class="chip confirmed" id="packChip">CONFIRMED</span></div>
+        <div style="margin:8px 0 4px;font-size:12.5px">1× Retatrutide 60mg ← batch <span class="mono">#B2406-11</span> <span class="tiny">(FEFO)</span></div>
+        <div class="tiny" style="margin-bottom:8px">BOM: box ☑ · label ☑ · ice pack ☑</div>
+        <button class="btn" id="packBtn" onclick="demoPack()">Mark Packed</button>
+        <div id="shipRow" style="display:none;margin-top:8px">
+          <div class="field"><label>Tracking / Lalamove ref</label><input id="trackRef" placeholder="LM-…"></div>
+          <button class="btn" onclick="demoShip()">Mark Shipped</button>
+        </div>
+      </div>
+      <div class="tiny" style="margin:10px 4px 6px">📮 COURIER · 2 parcels</div>
+      <div class="card"><div class="row"><div><b style="font-size:12.5px">Ahmad Faiz</b>
+        <span class="mono tiny">#IDX-0040</span><div class="tiny">2× GHK-Cu 50mg · J&T</div></div>
+        <span class="chip packed">PACKED</span></div></div>
+      <div class="card" style="border-color:#FCA5A5;background:#FFF7F7"><div class="row">
+        <div><b style="font-size:12.5px">Lim Wei Ling</b> <span class="mono tiny">#IDX-0041</span>
+          <div class="tiny bad">short stock — need 1× GHK-Cu 50mg at A-house</div></div>
+        <button class="btn ghost" style="width:auto;padding:6px 10px;font-size:11px">Transfer stock</button></div></div>
+      <div class="sect">MON 10 AUG</div>
+      <div class="card" style="opacity:.65"><div class="row"><div><b style="font-size:12.5px">Nur Aisyah</b>
+        <span class="mono tiny">#IDX-0043</span><div class="tiny">1× BPC-157 5mg · Celsius Chilled</div></div>
+        <span class="chip confirmed">CONFIRMED</span></div></div>
+    </section>
+
+    <!-- ================= CASH ================= -->
+    <section class="screen admin-only" id="scr-cash">
+      <div class="h">Cash</div>
+      <div class="card" style="background:#0F766E;border-color:#0F766E;color:#fff">
+        <div class="tiny" style="color:#99F6E4">POSITION — MAYBANK ····6021</div>
+        <div style="font-size:24px;font-weight:800;margin-top:2px">RM 12,450.30</div>
+        <div class="tiny" style="color:#99F6E4">Aug: in RM 4,900 · out RM 3,730 · runway ≈ 7 mo fixed costs</div>
+      </div>
+      <div class="sect">AUTO — FROM OPERATIONS</div>
+      <div class="card"><div class="row"><div><b class="good" style="font-size:12.5px">+ RM 350</b>
+        <span class="muted"> sale <span class="mono">#IDX-0042</span></span></div><span class="tiny">2 Aug</span></div></div>
+      <div class="card"><div class="row"><div><b class="bad" style="font-size:12.5px">− RM 980</b>
+        <span class="muted"> stock purchase <span class="mono">PO-12</span></span></div><span class="tiny">1 Aug</span></div></div>
+      <div class="card"><div class="row"><div><b class="bad" style="font-size:12.5px">− RM 120</b>
+        <span class="muted"> testing · Janoshik <span class="mono">#B2406-11</span></span></div><span class="tiny">1 Aug</span></div></div>
+      <div class="sect">MANUAL</div>
+      <div class="card"><div class="row"><div><b class="bad" style="font-size:12.5px">− RM 1,500</b>
+        <span class="muted"> salary · Aug ⟳</span></div><span class="tiny">1 Aug</span></div></div>
+      <div class="card"><div class="row"><div><b class="bad" style="font-size:12.5px">− RM 230</b>
+        <span class="muted"> label printing 📎</span></div><span class="tiny">28 Jul</span></div></div>
+      <button class="btn ghost">＋ Add expense</button>
+    </section>
+  </div>
+
+  <!-- tab bar -->
+  <nav class="tabbar" aria-label="Main">
+    <button class="tab on" id="tab-home"  onclick="go('home')"><span class="ic">🏠</span>Home</button>
+    <button class="tab"    id="tab-stock" onclick="go('stock')"><span class="ic">📦</span>Stok</button>
+    <button class="fab" onclick="go('new')" aria-label="New order">＋</button>
+    <button class="tab"    id="tab-queue" onclick="go('queue')"><span class="ic">🚚</span>Queue</button>
+    <button class="tab admin-only" id="tab-cash" onclick="go('cash')"><span class="ic">💰</span>Cash</button>
+  </nav>
+</div>
+
+<p class="legend">
+  <b>What to look at:</b> the Admin/Ops toggle removes Cash, prices and margins entirely for the ops role ·
+  “Paste sample” on ➕ New Order shows the WhatsApp parser · “Mark Packed” in Queue walks the pack→ship flow ·
+  batch numbers are always monospace · status colors are consistent everywhere.
+  This file is a reference mockup (docs/06-ui-ux.md), not production code.
+</p>
+
+<script>
+  var screens=['home','stock','new','queue','cash'];
+  function go(s){
+    if(document.body.classList.contains('ops') && s==='cash') s='home';
+    screens.forEach(function(x){
+      var scr=document.getElementById('scr-'+x), tab=document.getElementById('tab-'+x);
+      if(scr) scr.classList.toggle('on', x===s);
+      if(tab) tab.classList.toggle('on', x===s);
+    });
+    document.getElementById('viewport').scrollTop=0;
+  }
+  function setRole(r){
+    document.body.classList.toggle('ops', r==='ops');
+    document.getElementById('roleAdmin').classList.toggle('on', r==='admin');
+    document.getElementById('roleOps').classList.toggle('on', r==='ops');
+    document.getElementById('whoami').textContent = r==='ops' ? 'Salam, Aiman 👋' : 'Salam, Nadeem 👋';
+    if(r==='ops') go('queue'); else go('home');
+  }
+  function demoParse(){
+    document.getElementById('pasteBox').textContent='NAMA : ROHAYA BINTI ISMAIL · PHONE NO : 012-919 2977 · QUANTITY : 1 vial 60mg';
+    document.getElementById('f-nama').value='Rohaya Binti Ismail';
+    document.getElementById('f-phone').value='012-919 2977';
+    document.getElementById('f-qty').value='1';
+    document.getElementById('f-item').selectedIndex=1;
+  }
+  function demoPack(){
+    document.getElementById('packChip').textContent='PACKED';
+    document.getElementById('packChip').className='chip packed';
+    document.getElementById('packBtn').style.display='none';
+    document.getElementById('shipRow').style.display='block';
+  }
+  function demoShip(){
+    document.getElementById('packChip').textContent='SHIPPED';
+    document.getElementById('packChip').className='chip shipped';
+    document.getElementById('shipRow').innerHTML=
+      '<div class="tiny good" style="margin-top:6px">✓ Stock deducted: 1× Reta 60mg (#B2406-11) + box + label + ice pack — from A-house</div>';
+  }
+</script>
+</body>
+</html>

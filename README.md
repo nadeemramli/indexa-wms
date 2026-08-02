@@ -37,6 +37,9 @@ Today the operation runs on manual coordination:
 | [`docs/02-requirements.md`](docs/02-requirements.md) | Feature specs / functional requirements for v1 (to-be) |
 | [`docs/03-open-questions.md`](docs/03-open-questions.md) | Remaining questions before/while building |
 | [`docs/04-data-model.md`](docs/04-data-model.md) | Draft data model for the Supabase schema |
+| [`docs/05-user-journeys.md`](docs/05-user-journeys.md) | How admin + ops move through the app, journey by journey |
+| [`docs/06-ui-ux.md`](docs/06-ui-ux.md) | Screens, navigation, wireframes, design conventions |
+| [`docs/mockups/app-mockup.html`](docs/mockups/app-mockup.html) | Clickable mockup — open in a browser to see the app |
 
 ## Tech stack (decided)
 
